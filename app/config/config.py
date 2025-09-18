@@ -18,7 +18,7 @@ class Settings:
             raise ValueError("API Key tidak ditemukan")
         genai.configure(api_key=Settings.GEMINI_API_KEY)
         return genai.GenerativeModel(
-            model_name=Settings.MODEL_NAME
+            model_name=Settings.MODEL_NAME,
             generation_config={
                 "temperature": Settings.TEMPERATURE,
                 "top_p": Settings.TOP_P,
