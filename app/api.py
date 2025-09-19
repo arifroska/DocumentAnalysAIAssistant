@@ -3,7 +3,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import shutil, os, mimetypes
 
-from service.agent import Agent
+from app.service.agent import Agent
 
 app = FastAPI(title="Document Analysis API", version="1.0.0")
 agent = Agent()

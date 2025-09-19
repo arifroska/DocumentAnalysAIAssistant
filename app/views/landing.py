@@ -1,7 +1,7 @@
 import streamlit as st
 import tempfile
 import os
-from service.agent import Agent
+from app.service.agent import Agent
 
 def run():
     st.set_page_config(page_title="AI Dokumen & Gambar Analyzer", layout="centered")

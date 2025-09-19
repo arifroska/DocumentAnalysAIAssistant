@@ -1,7 +1,7 @@
 import mimetypes
-from config.config import Settings
-from utils.encoder import Encoder
-from utils.pdf_extractor import Pdfextractor
+from app.config.config import Settings
+from app.utils.encoder import Encoder
+from app.utils.pdf_extractor import Pdfextractor
 
 class Agent:
     def __init__(self):
