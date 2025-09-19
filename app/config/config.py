@@ -10,7 +10,7 @@ class Settings:
 
     TEMPERATURE: float = 0.0
     TOP_P: float = 0.5
-    TOP_K: float = 0.5
+    TOP_K: int = 5
 
     @staticmethod
     def get_model():
