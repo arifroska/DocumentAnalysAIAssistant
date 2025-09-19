@@ -6,4 +6,4 @@ How to run:
 4. if using docker, create the image
    docker build -t document-analyst .
 5. run the image
-   docker run -it --rm -p 8000:8000 document-analyst
+   docker run -it --rm -p 8000:8000 --env-file .env document-analyst

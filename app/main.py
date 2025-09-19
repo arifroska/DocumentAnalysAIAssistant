@@ -6,4 +6,8 @@
 import uvicorn
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    #use for local
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+    #use for docker
+    #uvicorn.run("app.api:app", host="0.0.0.0", port=8000, reload=True)
