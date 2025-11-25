@@ -11,9 +11,10 @@ class Agent:
         return (
             "Analisis file ini dan kembalikan hasil dalam format yang sangat ringkas:\n"
             "- Jika ada objek, sebutkan jumlah dan nama objek, pisahkan dengan koma jika lebih dari satu.\n"
-            "- Jika ada dokumen, sebutkan jenis dokumen (contoh: '1 surat kepemilikan tanah', '1 KTP').\n"
+            #"- Jika ada dokumen, sebutkan jenis dokumen (contoh: '1 surat kepemilikan tanah', '1 KTP').\n"
             "- Berikan balasan yang seragam, seperti '1 Cincin emas dengan pertama biru' menjadi '1 Cincin Emas'"
-            "- '1 Surat Kepemilikan Tanah di Kota Jakarta' menjadi '1 Surat Kepemilikan Tanah'"
+            #"- '1 Surat Kepemilikan Tanah di Kota Jakarta' menjadi '1 Surat Kepemilikan Tanah'"
+            "- Hanya analisa objek yang berupa emas seperti perhiasan atau batangan emas"
             "- Jangan beri kalimat tambahan, jangan beri kata pengantar.\n"
             "- Hanya kembalikan daftar objek/dokumen yang ditemukan."
         )
