@@ -6,7 +6,8 @@ class Settings:
     load_dotenv()
     
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
-    MODEL_NAME = "gemini-2.5-pro"
+    #MODEL_NAME = "gemini-2.5-pro"
+    MODEL_NAME = "gemini-3-pro-preview"
 
     TEMPERATURE: float = 0.0
     TOP_P: float = 0.5
