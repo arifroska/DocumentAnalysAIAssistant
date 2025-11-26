@@ -1,12 +1,23 @@
 import mimetypes
-from app.config.config import Settings
+from app.config.config import Settings, Dbconfig
 from app.utils.encoder import Encoder
 from app.utils.pdf_extractor import Pdfextractor
 import json
+import psycopg2
+from psycopg2 import sql
+import uuid
 
 class Agent:
     def __init__(self):
         self.model = Settings.get_model()
+        self.tbl_name = Dbconfig.TABLE_NAME
+        self.db_config = {
+            "user": Dbconfig.DB_USER,
+            "password": Dbconfig.DB_PASS,
+            "host": Dbconfig.DB_HOST,
+            "port": Dbconfig.DB_PORT,
+            "database": Dbconfig.DB_NAME
+        }
     
     def build_prompt(self) -> str:
         return (
@@ -33,41 +44,37 @@ class Agent:
             - Fitur Detail : Detail Dekoratif(Uliran/Mille-Grains, Pola Spiral, Ukiran Bunga/Floral Engraving, Filigree)
             - Pengikatan Batu (Jika Ada) : Mata Cincin & Setting(Bentuk Batu: Bulat/Marquise; Jenis Setting: Prong/Bezel/Pavé)
 
-            Output harus berupa JSON yang berada di dalam array. JSON memiliki key berikut :
-            1. nama_barang
-            2. jenis_barang
-            3. jumlah_barang
-            4. dimensi
-            5. deskripsi
+            Output harus berupa JSON. Jangan jadikan JSON sebagai List/Array. JSON memiliki key berikut :
+            1. nama_barang -> Tipe data STRING
+            2. jenis_barang -> Tipe data STRING
+            3. jumlah_barang -> Tipe data INTEGER
+            4. dimensi -> Tipe data STRING
+            5. deskripsi -> Tipe data TEXT
 
             Contoh:
-            [
             {
                 "nama_barang": "Cincin Emas Putih Tiga Batu (Trilogy Ring)",
                 "jenis_barang": "Cincin Emas",
                 "jumlah_barang": 1,
                 "dimensi": "Diameter 17.3 mm (Ukuran US 7)",
-                "deskripsi_detail": "Cincin terbuat dari Emas Putih (perkiraan 18K) dengan hasil akhir High-Polish yang cemerlang di seluruh band. Band cincin memiliki taper (penyempitan) di dekat kepala cincin, dengan lebar minimal 2.5 mm. Desain Trilogy menampilkan tiga batu mulia: satu berlian utama berbentuk Round Brilliant Cut berukuran sekitar 5.0 mm (sekitar 0.5 ct), diapit oleh dua berlian Round Brilliant Cut yang lebih kecil, masing-masing berukuran 3.0 mm. Semua batu diikat menggunakan Setting Prong 4-cakar. Tidak ada uliran atau ukiran tambahan pada permukaan band."
+                "deskripsi": "Cincin terbuat dari Emas Putih (perkiraan 18K) dengan hasil akhir High-Polish yang cemerlang di seluruh band. Band cincin memiliki taper (penyempitan) di dekat kepala cincin, dengan lebar minimal 2.5 mm. Desain Trilogy menampilkan tiga batu mulia: satu berlian utama berbentuk Round Brilliant Cut berukuran sekitar 5.0 mm (sekitar 0.5 ct), diapit oleh dua berlian Round Brilliant Cut yang lebih kecil, masing-masing berukuran 3.0 mm. Semua batu diikat menggunakan Setting Prong 4-cakar. Tidak ada uliran atau ukiran tambahan pada permukaan band."
             }
-            ]
 
             Contoh lainnya:
-            [
-                {
+            {
                 "nama_barang": "Sepasang Anting Stud Berlian",
                 "jenis_barang": "Anting Berlian",
                 "jumlah_barang": 2,
                 "dimensi": "Panjang 30 mm dan Lebar 15 mm",
-                "deskripsi_detail": "Sepasang Anting Stud (kancing) yang terbuat dari Emas Putih (perkiraan 14K) dengan finishing High-Polish. Setiap anting memiliki satu batu mulia utama berbentuk Round Brilliant Cut berdiameter sekitar 4.0 mm (sekitar 0.25 ct per anting). Batu-batu tersebut diikat menggunakan Setting Prong 4-cakar yang ramping, dan ditopang oleh kerangka emas kecil. Tiang (post) anting terlihat lurus tanpa uliran."
-                },
-                {
+                "deskripsi": "Sepasang Anting Stud (kancing) yang terbuat dari Emas Putih (perkiraan 14K) dengan finishing High-Polish. Setiap anting memiliki satu batu mulia utama berbentuk Round Brilliant Cut berdiameter sekitar 4.0 mm (sekitar 0.25 ct per anting). Batu-batu tersebut diikat menggunakan Setting Prong 4-cakar yang ramping, dan ditopang oleh kerangka emas kecil. Tiang (post) anting terlihat lurus tanpa uliran."
+            },
+            {
                 "nama_barang": "Liontin Medali Emas Kuning Berukir",
                 "jenis_barang": "Liontin Emas",
                 "jumlah_barang": 1,
                 "dimensi": "Panjang 40 mm dan Lebar 25 mm",
-                "deskripsi_detail": "Satu Liontin berbentuk Medali Bundar Emas Kuning (perkiraan 22K) dengan diameter 30 mm. Permukaan medali memiliki dua tekstur: bingkai luar memiliki tekstur Matte, sementara bagian tengahnya menampilkan ukiran relief mendalam dari figur mitologis dengan rambut yang sangat detail. Ukiran ini memiliki permukaan yang dipoles mengilap, menciptakan kontras visual. Medali digantung pada Bail berbentuk oval sederhana."
-                }
-            ]
+                "deskripsi": "Satu Liontin berbentuk Medali Bundar Emas Kuning (perkiraan 22K) dengan diameter 30 mm. Permukaan medali memiliki dua tekstur: bingkai luar memiliki tekstur Matte, sementara bagian tengahnya menampilkan ukiran relief mendalam dari figur mitologis dengan rambut yang sangat detail. Ukiran ini memiliki permukaan yang dipoles mengilap, menciptakan kontras visual. Medali digantung pada Bail berbentuk oval sederhana."
+            }
             """
             
             #"Analisis file ini dan kembalikan hasil dalam format yang sangat ringkas:\n"
@@ -130,8 +137,58 @@ class Agent:
 
         try:
             json_data = json.loads(cleaned_text)
+            hasil_input = self.save_result(json_data)
+            if hasil_input:
+                print(f"✅ Data berhasil disimpan dengan ID {hasil_input}.")
+            else:
+                print("❌ Gagal menyimpan data ke DB, hanya mengembalikan hasil mentah.")
+                return json_data
             return json_data
         except json.JSONDecodeError:
             print(f"Error parsing JSON: {e}")
             print(f"Original text: {raw_text}")
             return {"error": "JSON_PARSE_FAILURE", "raw_output": raw_text}
+        
+    def save_result(self, result_json: dict):
+        """
+        Simpan hasil analisis AI ke database
+        """
+
+        conn = None
+        try:
+            new_uuid = uuid.uuid4()
+
+            conn = psycopg2.connect(**self.db_config)
+            curr = conn.cursor()
+
+            insert_data = {
+                "id": str(new_uuid),
+                "nama_barang": result_json.get("nama_barang"),
+                "jenis_barang": result_json.get("jenis_barang"),
+                "jumlah_barang": int(result_json.get("jumlah_barang")),
+                "dimensi": result_json.get("dimensi"),
+                "deskripsi": result_json.get("deskripsi")
+            }
+
+            kolom = insert_data.keys()
+            value = insert_data.values()
+
+            insert_query = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+                sql.Identifier(self.tbl_name),
+                sql.SQL(', ').join(map(sql.Identifier, kolom)),
+                sql.SQL(', ').join(sql.Placeholder() * len(kolom))
+            )
+
+            curr.execute(insert_query, list(value))
+            conn.commit()
+            print(f"✅ Berhasil menyimpan hasil dengan ID: {new_uuid}")
+            return new_uuid
+        except (Exception, psycopg2.Error) as error:
+            print(f"❌ Terjadi kesalahan saat menyimpan data: {error}")
+            if conn:
+                conn.rollback()
+                return f"Gagal menyimpan data"
+        finally:
+            if conn:
+                curr.close()
+                conn.close()
