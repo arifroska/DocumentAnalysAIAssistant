@@ -44,7 +44,7 @@ class Agent:
             - Fitur Detail : Detail Dekoratif(Uliran/Mille-Grains, Pola Spiral, Ukiran Bunga/Floral Engraving, Filigree)
             - Pengikatan Batu (Jika Ada) : Mata Cincin & Setting(Bentuk Batu: Bulat/Marquise; Jenis Setting: Prong/Bezel/Pavé)
 
-            Output harus berupa JSON. Jangan jadikan JSON sebagai List/Array. JSON memiliki key berikut :
+            Output harus berupa JSON. Jadikan JSON sebagai List/Array. JSON memiliki key berikut :
             1. nama_barang -> Tipe data STRING
             2. jenis_barang -> Tipe data STRING
             3. jumlah_barang -> Tipe data INTEGER
@@ -52,6 +52,7 @@ class Agent:
             5. deskripsi -> Tipe data TEXT
 
             Contoh:
+            [
             {
                 "nama_barang": "Cincin Emas Putih Tiga Batu (Trilogy Ring)",
                 "jenis_barang": "Cincin Emas",
@@ -59,8 +60,10 @@ class Agent:
                 "dimensi": "Diameter 17.3 mm (Ukuran US 7)",
                 "deskripsi": "Cincin terbuat dari Emas Putih (perkiraan 18K) dengan hasil akhir High-Polish yang cemerlang di seluruh band. Band cincin memiliki taper (penyempitan) di dekat kepala cincin, dengan lebar minimal 2.5 mm. Desain Trilogy menampilkan tiga batu mulia: satu berlian utama berbentuk Round Brilliant Cut berukuran sekitar 5.0 mm (sekitar 0.5 ct), diapit oleh dua berlian Round Brilliant Cut yang lebih kecil, masing-masing berukuran 3.0 mm. Semua batu diikat menggunakan Setting Prong 4-cakar. Tidak ada uliran atau ukiran tambahan pada permukaan band."
             }
+            ]
 
             Contoh lainnya:
+            [
             {
                 "nama_barang": "Sepasang Anting Stud Berlian",
                 "jenis_barang": "Anting Berlian",
@@ -75,6 +78,7 @@ class Agent:
                 "dimensi": "Panjang 40 mm dan Lebar 25 mm",
                 "deskripsi": "Satu Liontin berbentuk Medali Bundar Emas Kuning (perkiraan 22K) dengan diameter 30 mm. Permukaan medali memiliki dua tekstur: bingkai luar memiliki tekstur Matte, sementara bagian tengahnya menampilkan ukiran relief mendalam dari figur mitologis dengan rambut yang sangat detail. Ukiran ini memiliki permukaan yang dipoles mengilap, menciptakan kontras visual. Medali digantung pada Bail berbentuk oval sederhana."
             }
+            ]
             """
             
             #"Analisis file ini dan kembalikan hasil dalam format yang sangat ringkas:\n"
@@ -88,7 +92,7 @@ class Agent:
             # "- Hanya kembalikan daftar objek/dokumen yang ditemukan."
         )
 
-    def analyze_file(self, file_path: str, mime_type:str = None) -> str:
+    def analyze_file(self, file_path: str, mime_type:str = None) -> list:
         print(f"DEBUG: File {file_path} | MIME dari UI: {mime_type}")
         parts = []
         # mime_type, _ = mimetypes.guess_type(file_path)
@@ -137,19 +141,40 @@ class Agent:
 
         try:
             json_data = json.loads(cleaned_text)
-            hasil_input = self.save_result(json_data)
-            if hasil_input:
-                print(f"✅ Data berhasil disimpan dengan ID {hasil_input}.")
+            id_transaksi_dokumen = str(uuid.uuid4())
+            saved_ids = []
+
+            if not isinstance(json_data, list):
+                print("❌ Output JSON tidak berupa List. Menganggapnya sebagai satu item.")
+                json_data = [json_data]
+
+            for item_data in json_data:
+                if not isinstance(item_data, dict):
+                    print("Peringatan: Melewati item non-dictionary dalam list.")
+                    continue
+
+                item_uuid = self.save_result(id_transaksi_dokumen, item_data)
+
+                if item_uuid:
+                    saved_ids.append(item_uuid)
+
+            if saved_ids:
+                print(f"✅ Transaksi ID {id_transaksi_dokumen}: Total {len(saved_ids)} item berhasil disimpan.")
             else:
-                print("❌ Gagal menyimpan data ke DB, hanya mengembalikan hasil mentah.")
-                return json_data
+                print("❌ Gagal menyimpan data, tidak ada item yang berhasil disimpan.")
+            # hasil_input = self.save_result(json_data)
+            # if hasil_input:
+            #     print(f"✅ Data berhasil disimpan dengan ID {hasil_input}.")
+            # else:
+            #     print("❌ Gagal menyimpan data ke DB, hanya mengembalikan hasil mentah.")
+            #     return json_data
             return json_data
         except json.JSONDecodeError:
             print(f"Error parsing JSON: {e}")
             print(f"Original text: {raw_text}")
             return {"error": "JSON_PARSE_FAILURE", "raw_output": raw_text}
         
-    def save_result(self, result_json: dict):
+    def save_result(self, document_id: str, result_json: dict):
         """
         Simpan hasil analisis AI ke database
         """
@@ -163,6 +188,7 @@ class Agent:
 
             insert_data = {
                 "id": str(new_uuid),
+                "document_id": document_id,
                 "nama_barang": result_json.get("nama_barang"),
                 "jenis_barang": result_json.get("jenis_barang"),
                 "jumlah_barang": int(result_json.get("jumlah_barang")),
