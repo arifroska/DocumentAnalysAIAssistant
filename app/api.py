@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import shutil, os, mimetypes
 
 from app.service.agent import Agent
+from app.config.auth import Authuser
 
 app = FastAPI(title="Document Analysis API", version="1.0.0")
 agent = Agent()
@@ -12,7 +13,7 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/analyze-file/")
-async def analyze_file(file: UploadFile = File(...)):
+async def analyze_file(username : Authuser, file: UploadFile = File(...)):
     try:
         # Validasi tipe file
         if not file.content_type.startswith(("image/", "application/pdf")):

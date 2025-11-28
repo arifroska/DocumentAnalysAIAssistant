@@ -6,3 +6,7 @@ fastapi
 uvicorn
 python-multipart
 psycopg2-binary
+pydantic
+passlib==1.7.4
+
+bcrypt==3.2.0
