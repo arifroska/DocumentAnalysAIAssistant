@@ -6,12 +6,23 @@ import shutil, os, mimetypes
 from app.service.agent import Agent
 
 app = FastAPI(title="Document Analysis API", version="1.0.0")
+
+# Add CORS Middleware
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 agent = Agent()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.post("/analyze-file/")
+@app.post("/analyze-file")
 async def analyze_file(file: UploadFile = File(...)):
     try:
         # Validasi tipe file
