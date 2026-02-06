@@ -1,6 +1,7 @@
 # api.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import shutil, os, mimetypes
 
 from app.service.agent import Agent
@@ -12,7 +13,15 @@ agent = Agent()
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.post("/analyze-file/")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Mengizinkan semua IP (HP, Laptop, dll)
+    allow_credentials=True,
+    allow_methods=["*"],  # PENTING: Mengizinkan OPTIONS, POST, GET, dll
+    allow_headers=["*"],  # PENTING: Mengizinkan header Authorization
+)
+
+@app.post("/analyze-file")
 async def analyze_file(username : Authuser, file: UploadFile = File(...)):
     try:
         # Validasi tipe file
